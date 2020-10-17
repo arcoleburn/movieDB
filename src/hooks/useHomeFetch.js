@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import API from "../API";
-
+import { isPersistedState } from "../helpers";
 const initialState = {
   page: 0,
   results: [],
@@ -39,6 +39,16 @@ export const useHomeFetch = () => {
 
   //initial and search
   useEffect(() => {
+    if (!searchTerm) {
+      const sessionState = isPersistedState("homeState");
+
+      if (sessionState) {
+        console.log("grabbing storage")
+        setState(sessionState);
+        return;
+      }
+    }
+    console.log("grabbing from api")
     setState(initialState);
     fetchMovies(1, searchTerm);
   }, [searchTerm]); //empty dependency arr makes it just run once, with search term dependency, it will trigger each time search term changes, and also once on mount
@@ -49,7 +59,12 @@ export const useHomeFetch = () => {
     fetchMovies(state.page + 1, searchTerm);
     setIsLoadingMore(false);
   }, [isLoadingMore, searchTerm, state.page]);
-  
+
+  //write the session storage
+  useEffect(() => {
+    if (!searchTerm)
+      sessionStorage.setItem("homeState", JSON.stringify(state));
+  }, [searchTerm, state]);
   return {
     state,
     loading,
